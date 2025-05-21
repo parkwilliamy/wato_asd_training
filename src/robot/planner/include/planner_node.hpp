@@ -18,6 +18,8 @@ class PlannerNode : public rclcpp::Node {
 public:
     PlannerNode();
 
+    std::mutex state_mutex_;
+
     enum class State { WAITING_FOR_GOAL, WAITING_FOR_ROBOT_TO_REACH_GOAL };
     State state_;
 

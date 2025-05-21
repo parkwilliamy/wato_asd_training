@@ -1,4 +1,6 @@
 #include "planner_node.hpp"
+#include <rclcpp/executors/multi_threaded_executor.hpp>
+
 
 PlannerNode::PlannerNode() : Node("planner_node"), state_(State::WAITING_FOR_GOAL) {
     map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -7,6 +9,10 @@ PlannerNode::PlannerNode() : Node("planner_node"), state_(State::WAITING_FOR_GOA
             "/goal_point", 10, std::bind(&PlannerNode::goalCallback, this, std::placeholders::_1));
         odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
             "/odom/filtered", 10, std::bind(&PlannerNode::odomCallback, this, std::placeholders::_1));
+
+        this->declare_parameter("goal_x", 0.0);
+        this->declare_parameter("goal_y", 0.0);
+        this->declare_parameter("planner_resolution", 0.05);
  
         // Publisher
         path_pub_ = this->create_publisher<nav_msgs::msg::Path>("/path", 10);
@@ -24,6 +30,7 @@ void PlannerNode::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
   }
  
 void PlannerNode::goalCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg) {
+
     goal_ = *msg;
     goal_received_ = true;
     state_ = State::WAITING_FOR_ROBOT_TO_REACH_GOAL;
@@ -35,6 +42,7 @@ void PlannerNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
 }
 
 void PlannerNode::timerCallback() {
+
     if (state_ == State::WAITING_FOR_ROBOT_TO_REACH_GOAL) {
         if (goalReached()) {
             RCLCPP_INFO(this->get_logger(), "Goal reached!");
@@ -115,6 +123,8 @@ PlannerNode::AStarNode& PriorityQueue::top() const {
 
 void PlannerNode::planPath() {
 
+    grid = {};
+
     int x1 = static_cast<int>((robot_pose_.position.x-current_map_.info.origin.position.x) / current_map_.info.resolution);
     int y1 = static_cast<int>((robot_pose_.position.y-current_map_.info.origin.position.y) / current_map_.info.resolution);
     int x2 = static_cast<int>((goal_.point.x-current_map_.info.origin.position.x) / current_map_.info.resolution);
@@ -122,6 +132,12 @@ void PlannerNode::planPath() {
     
 
     PlannerNode::AStarNode end_node = AStarSearch(x1, y1, x2, y2);
+
+    PlannerNode::CellIndex end_idx(x2, y2);
+    if (grid.find(end_idx) == grid.end() || grid[end_idx].parent == CellIndex()) {
+        RCLCPP_ERROR(this->get_logger(), "No path found to goal (%d, %d)", x2, y2);
+        return;
+    }
 
     nav_msgs::msg::Path path;
     path.header.frame_id = "sim_world";
@@ -141,6 +157,10 @@ void PlannerNode::planPath() {
     //RCLCPP_INFO(this->get_logger(), "Checkpoint 1");
 
     while (parent_idx != CellIndex(x1,y1)) {
+        if (grid.count(parent_idx) == 0) {
+            RCLCPP_ERROR(this->get_logger(), "Invalid parent index during backtrace.");
+            return;
+        }
         temp.pose.position.x = current_map_.info.origin.position.x + (parent_idx.x+0.5) * current_map_.info.resolution;
         temp.pose.position.y = current_map_.info.origin.position.y + (parent_idx.y+0.5) * current_map_.info.resolution;
         path.poses.insert(path.poses.begin(), temp);
@@ -188,7 +208,7 @@ PlannerNode::AStarNode& PlannerNode::AStarSearch(int x1, int y1, int x2, int y2)
     grid[start].f_score = distance(start, end);
     open_nodes.push(grid[start]);
 
-    while (1) {
+    while (!open_nodes.empty()) {
 
         current = open_nodes.top().index;
         
@@ -208,7 +228,7 @@ PlannerNode::AStarNode& PlannerNode::AStarSearch(int x1, int y1, int x2, int y2)
                      current.x+dx < current_map_.info.width)) {
 
                     //if an obstacle or node in closed list
-                    if (current_map_.data[neighbor.x + current_map_.info.width * neighbor.y] >= 30 || std::find(closed_nodes.begin(), closed_nodes.end(), neighbor) != closed_nodes.end()) continue;
+                    if (current_map_.data[neighbor.x + current_map_.info.width * neighbor.y] >= 50 || std::find(closed_nodes.begin(), closed_nodes.end(), neighbor) != closed_nodes.end()) continue;
 
                     double tentative_g = grid[current].g_score + distance(current, neighbor);
 
