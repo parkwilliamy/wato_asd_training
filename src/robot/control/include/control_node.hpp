@@ -39,7 +39,9 @@ private:
     double goal_tolerance_;
     double linear_speed_;
     int points_passed;
-    double dist_to_goal_ = 10000;
+    bool goal_reached_ = false;
+
+    
 
     // Control logic
     std::optional<geometry_msgs::msg::PoseStamped> findLookaheadPoint();

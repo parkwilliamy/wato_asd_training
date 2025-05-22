@@ -7,8 +7,8 @@ CostmapCore::CostmapCore(const rclcpp::Logger& logger) : logger_(logger) {}
 
 
 void CostmapCore::initializeCostmap() {
-    grid_width_ = 100;
-    grid_height_ = 100;
+    grid_width_ = 1000;
+    grid_height_ = 1000;
     grid_ = std::vector<std::vector<int8_t>>(grid_height_, std::vector<int8_t>(grid_width_, -1)); //initialize with -1s, unknown
 	resolution_ = 0.1; 
 }
@@ -90,7 +90,7 @@ void CostmapCore::tracePath(int x_grid, int y_grid) {
 
 void CostmapCore::inflateObstacles() {
 
-	int inflation_radius = 7; 
+	int inflation_radius = 100; 
 	int cost_surrounding = 0;
 	int distance = 0;
 

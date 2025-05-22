@@ -5,8 +5,8 @@
 ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->get_logger())) {
 
     // Initialize parameters
-    lookahead_distance_ = 1;  // Lookahead distance
-    goal_tolerance_ = 0.1;      // Distance to consider the goal reached
+    lookahead_distance_ = 0.25;  // Lookahead distance
+    goal_tolerance_ = 1.5;      // Distance to consider the goal reached
     linear_speed_ = 1;        // Constant forward speed
 
     path_sub_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -14,6 +14,7 @@ ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->g
         [this](const nav_msgs::msg::Path::SharedPtr msg) {
             current_path_ = msg;
             points_passed = 0;  // Reset on new path
+            goal_reached_ = false;
         });
 
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -30,22 +31,30 @@ ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->g
 }
 
 void ControlNode::controlLoop() {
-    if (!current_path_ || !robot_odom_) {
+    if (!current_path_ || !robot_odom_ || goal_reached_) {
         return;
     }
+    
+    const auto& goal = current_path_->poses.back();
+    double dx = current_path_->poses[current_path_->poses.size()-1].pose.position.x - robot_odom_->pose.pose.position.x;
+    double dy = current_path_->poses[current_path_->poses.size()-1].pose.position.y - robot_odom_->pose.pose.position.y;
+    double dist_to_goal = std::sqrt(dx * dx + dy * dy);
 
-    if (dist_to_goal_ <= goal_tolerance_) {
+    if (dist_to_goal <= goal_tolerance_) {
         RCLCPP_INFO(this->get_logger(), "Goal reached. Stopping robot.");
         geometry_msgs::msg::Twist stop_cmd;
         cmd_vel_pub_->publish(stop_cmd);
+        goal_reached_ = true;
         return;
     }
+    
 
     auto lookahead_point = findLookaheadPoint();
     if (!lookahead_point) {
         RCLCPP_INFO(this->get_logger(), "No valid lookahead point found.");
         return;
     }
+
 
     auto cmd_vel = computeVelocity(*lookahead_point);
     cmd_vel_pub_->publish(cmd_vel);
@@ -78,12 +87,11 @@ geometry_msgs::msg::Twist ControlNode::computeVelocity(const geometry_msgs::msg:
     double dx = target.pose.position.x - robot_odom_->pose.pose.position.x;
     double dy = target.pose.position.y - robot_odom_->pose.pose.position.y;
     double alpha = std::atan2(dy, dx) - yaw;
-    dist_to_goal_ = std::sqrt(dx * dx + dy * dy);
-
+    
     
     cmd_vel.linear.x = linear_speed_;
     cmd_vel.angular.z = 2 * linear_speed_ * std::sin(alpha) / lookahead_distance_;
-   
+  
 
     return cmd_vel;
 }

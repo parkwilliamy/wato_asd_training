@@ -102,7 +102,7 @@ void MapMemoryNode::integrateCostMap() {
                 gy >= 0 && gy < static_cast<int>(global_map_.info.height)) {
 
                 int gidx = gy * global_map_.info.width + gx;
-                global_map_.data[gidx] = value;
+                global_map_.data[gidx] = std::max(global_map_.data[gidx], value);
             }
         }
     }
