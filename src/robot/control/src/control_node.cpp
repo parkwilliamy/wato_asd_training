@@ -5,8 +5,8 @@
 ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->get_logger())) {
 
     // Initialize parameters
-    lookahead_distance_ = 0.25;  // Lookahead distance
-    goal_tolerance_ = 1.5;      // Distance to consider the goal reached
+    lookahead_distance_ = 0.7;  // Lookahead distance
+    goal_tolerance_ = 0.5;      // Distance to consider the goal reached
     linear_speed_ = 1;        // Constant forward speed
 
     path_sub_ = this->create_subscription<nav_msgs::msg::Path>(

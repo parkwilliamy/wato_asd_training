@@ -228,7 +228,7 @@ PlannerNode::AStarNode& PlannerNode::AStarSearch(int x1, int y1, int x2, int y2)
                      current.x+dx < current_map_.info.width)) {
 
                     //if an obstacle or node in closed list
-                    if (current_map_.data[neighbor.x + current_map_.info.width * neighbor.y] >= 98 || std::find(closed_nodes.begin(), closed_nodes.end(), neighbor) != closed_nodes.end()) continue;
+                    if (current_map_.data[neighbor.x + current_map_.info.width * neighbor.y] >= 60 || std::find(closed_nodes.begin(), closed_nodes.end(), neighbor) != closed_nodes.end()) continue;
 
                     double tentative_g = grid[current].g_score + distance(current, neighbor);
 

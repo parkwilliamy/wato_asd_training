@@ -31,6 +31,7 @@ class CostmapCore {
     int grid_height_;
     std::vector<std::vector<int8_t>> grid_;
     std::vector<int8_t> costmap_flat_;
+    bool isObstacle_;
     
 };
 

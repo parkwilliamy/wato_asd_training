@@ -7,16 +7,19 @@ CostmapCore::CostmapCore(const rclcpp::Logger& logger) : logger_(logger) {}
 
 
 void CostmapCore::initializeCostmap() {
-    grid_width_ = 1000;
-    grid_height_ = 1000;
+    grid_width_ = 100;
+    grid_height_ = 100;
     grid_ = std::vector<std::vector<int8_t>>(grid_height_, std::vector<int8_t>(grid_width_, -1)); //initialize with -1s, unknown
 	resolution_ = 0.1; 
 }
 
 void CostmapCore::convertToGrid(double range, double angle, int& x_grid, int& y_grid) {
 
-	if (range > (grid_width_/2)*resolution_) range = (grid_width_/2)*resolution_;
-	
+	if (range > (grid_width_/2)*resolution_) {
+        range = (grid_width_/2)*resolution_;
+        isObstacle_ = false;
+    } 
+    else isObstacle_ = true;
 	//determine the x,y coords relative to the center of the 50x50 grid
 	x_grid = (grid_width_)/2+(range*cos(angle) / resolution_);
 	y_grid = (grid_height_)/2+(range*sin(angle) / resolution_);
@@ -25,9 +28,11 @@ void CostmapCore::convertToGrid(double range, double angle, int& x_grid, int& y_
 }
 
 void CostmapCore::markObstacle(int x_grid, int y_grid, double range) {
+
     tracePath(x_grid, y_grid);
-	if (range <= grid_width_) grid_[y_grid][x_grid] = 100; //if laser's range is less than or equal to the costmap grid range
+    if (isObstacle_) grid_[y_grid][x_grid] = 100; 
     else grid_[y_grid][x_grid] = 0;
+    
 }
 
 void CostmapCore::tracePath(int x_grid, int y_grid) {
@@ -90,7 +95,7 @@ void CostmapCore::tracePath(int x_grid, int y_grid) {
 
 void CostmapCore::inflateObstacles() {
 
-	int inflation_radius = 100; 
+	int inflation_radius = 5; 
 	int cost_surrounding = 0;
 	int distance = 0;
 

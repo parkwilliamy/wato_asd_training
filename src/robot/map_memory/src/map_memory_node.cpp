@@ -91,6 +91,7 @@ void MapMemoryNode::integrateCostMap() {
             // Rotate by robot yaw and translate by robot position
             double global_x = std::cos(yaw_) * local_x - std::sin(yaw_) * local_y + last_x;
             double global_y = std::sin(yaw_) * local_x + std::cos(yaw_) * local_y + last_y;
+            
 			
 
             // Convert to global map grid coordinates
@@ -103,6 +104,7 @@ void MapMemoryNode::integrateCostMap() {
 
                 int gidx = gy * global_map_.info.width + gx;
                 global_map_.data[gidx] = std::max(global_map_.data[gidx], value);
+                //global_map_.data[gidx] = value;
             }
         }
     }
