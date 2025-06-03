@@ -5,7 +5,7 @@
 ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->get_logger())) {
 
     // Initialize parameters
-    lookahead_distance_ = 0.7;  // Lookahead distance
+    lookahead_distance_ = 0.7;  
     goal_tolerance_ = 0.5;      // Distance to consider the goal reached
     linear_speed_ = 1;        // Constant forward speed
 
@@ -24,13 +24,13 @@ ControlNode::ControlNode(): Node("control"), control_(robot::ControlCore(this->g
         });
 
     cmd_vel_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
-
     control_timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this]() { controlLoop(); });
-
     points_passed = 0;
+
 }
 
 void ControlNode::controlLoop() {
+
     if (!current_path_ || !robot_odom_ || goal_reached_) {
         return;
     }
@@ -48,19 +48,19 @@ void ControlNode::controlLoop() {
         return;
     }
     
-
     auto lookahead_point = findLookaheadPoint();
     if (!lookahead_point) {
         RCLCPP_INFO(this->get_logger(), "No valid lookahead point found.");
         return;
     }
 
-
     auto cmd_vel = computeVelocity(*lookahead_point);
     cmd_vel_pub_->publish(cmd_vel);
+
 }
 
 std::optional<geometry_msgs::msg::PoseStamped> ControlNode::findLookaheadPoint() {
+
     if (!current_path_ || current_path_->poses.empty()) {
         return std::nullopt;
     }

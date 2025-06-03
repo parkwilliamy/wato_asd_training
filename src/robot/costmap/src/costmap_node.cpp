@@ -30,8 +30,6 @@ void CostmapNode::publishCostmap() {
 
 	msg.data = costmap_.getCostmapFlat();
 
-	//RCLCPP_INFO(this->get_logger(), "Publishing costmap with %zu cells", msg.data.size());
-
 	costmap_pub_->publish(msg);
 }
 

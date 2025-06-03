@@ -15,13 +15,15 @@ void CostmapCore::initializeCostmap() {
 
 void CostmapCore::convertToGrid(double range, double angle, int& x_grid, int& y_grid) {
 
-	if (range > (grid_width_/2)*resolution_) {
-        range = (grid_width_/2)*resolution_;
+	if (range > (grid_width_/2)*resolution_) { //if range is beyond the costmap range
+        range = (grid_width_/2)*resolution_; //limit the range so we still have a point within the costmap 
         isObstacle_ = false;
     } 
-    else isObstacle_ = true;
+
+    else isObstacle_ = true; 
+
 	//determine the x,y coords relative to the center of the 50x50 grid
-	x_grid = (grid_width_)/2+(range*cos(angle) / resolution_);
+	x_grid = (grid_width_)/2+(range*cos(angle) / resolution_); 
 	y_grid = (grid_height_)/2+(range*sin(angle) / resolution_);
 
 
@@ -36,6 +38,9 @@ void CostmapCore::markObstacle(int x_grid, int y_grid, double range) {
 }
 
 void CostmapCore::tracePath(int x_grid, int y_grid) {
+
+    //Bresenham's line drawing algorithm
+    
     int y0 = grid_height_/2;
     int x0 = grid_width_/2;
     int dy = y_grid-y0;
@@ -95,10 +100,11 @@ void CostmapCore::tracePath(int x_grid, int y_grid) {
 
 void CostmapCore::inflateObstacles() {
 
-	int inflation_radius = 5; 
+	int inflation_radius = 5; //max distance the obstacle can "inflate" out to
 	int cost_surrounding = 0;
 	int distance = 0;
 
+    //iterate over all costmap cells and if a cell is an obstacle, inflate it
 	for (int y = 0; y < grid_height_; ++y) {
 		for (int x = 0; x < grid_width_; ++x) {
 			if (grid_[y][x] == 100) {
@@ -111,7 +117,7 @@ void CostmapCore::inflateObstacles() {
 
 						if ((y+dy >= 0 && x+dx >= 0) && (y+dy <= grid_height_-1 && x+dx <= grid_width_-1)) {
 
-							if (dy == 0 && dx == 0) continue; //skip origin
+							if (dy == 0 && dx == 0) continue; //skip obstacle point
 							distance = std::max(abs(dx), abs(dy));
 							cost_surrounding = 100*(1-(float)distance/inflation_radius);
 							if (cost_surrounding > grid_[y+dy][x+dx]) grid_[y+dy][x+dx] = cost_surrounding; //if calculated cost is greater than the cell's present cost

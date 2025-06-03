@@ -15,6 +15,7 @@ MapMemoryNode::MapMemoryNode() : Node("map_memory"), map_memory_(robot::MapMemor
 	global_map_.header.frame_id = "sim_world";
 	global_map_.header.stamp = this->get_clock()->now();
 
+    //creates a 30x30m global map that matches the dimensions of the simulation course
 	global_map_.info.width = 30;
     global_map_.info.height = 30;
 	global_map_.info.resolution = 1; 
@@ -26,7 +27,7 @@ MapMemoryNode::MapMemoryNode() : Node("map_memory"), map_memory_(robot::MapMemor
 	global_map_.info.origin.orientation.z = 0.0;
 	global_map_.info.origin.orientation.w = 1.0;
 
-	std::vector<int8_t> grid(900, -1);
+	std::vector<int8_t> grid(900, -1); 
 	global_map_.data = grid;
   
 }
@@ -54,9 +55,6 @@ void MapMemoryNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
 
 	yaw_ = quaternionToYaw(msg->pose.pose.orientation);
 
-	//RCLCPP_INFO(this->get_logger(), "Last x = %.2f", last_x);
-	//RCLCPP_INFO(this->get_logger(), "Last y = %.2f", last_y);
-
 }
 
 // Timer-based map update
@@ -78,6 +76,7 @@ void MapMemoryNode::integrateCostMap() {
     double costmap_origin_x = latest_costmap_.info.origin.position.x;
     double costmap_origin_y = latest_costmap_.info.origin.position.y;
 
+    //iterate over most recent costmap cells
     for (int y = 0; y < latest_costmap_.info.height; ++y) {
         for (int x = 0; x < latest_costmap_.info.width; ++x) {
             // Skip unknown cells
@@ -91,8 +90,6 @@ void MapMemoryNode::integrateCostMap() {
             // Rotate by robot yaw and translate by robot position
             double global_x = std::cos(yaw_) * local_x - std::sin(yaw_) * local_y + last_x;
             double global_y = std::sin(yaw_) * local_x + std::cos(yaw_) * local_y + last_y;
-            
-			
 
             // Convert to global map grid coordinates
             int gx = static_cast<int>((global_x - global_map_.info.origin.position.x) / global_map_.info.resolution);
@@ -103,8 +100,7 @@ void MapMemoryNode::integrateCostMap() {
                 gy >= 0 && gy < static_cast<int>(global_map_.info.height)) {
 
                 int gidx = gy * global_map_.info.width + gx;
-                global_map_.data[gidx] = std::max(global_map_.data[gidx], value);
-                //global_map_.data[gidx] = value;
+                global_map_.data[gidx] = std::max(global_map_.data[gidx], value); //map only updates if new potential cell value is greater than existing cell value
             }
         }
     }

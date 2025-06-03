@@ -12,23 +12,22 @@ class MapMemoryNode : public rclcpp::Node {
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void publishMap();
     double quaternionToYaw(const geometry_msgs::msg::Quaternion& q);
-    void integrateCostMap();
+    void integrateCostMap(); //integrates costmap into global map based on robot's global pose
 
   private:
     robot::MapMemoryCore map_memory_;
+    nav_msgs::msg::OccupancyGrid latest_costmap_; //costmap message that is received from the costmap node
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
     nav_msgs::msg::OccupancyGrid global_map_;
-    double last_x, last_y;
-    const double distance_threshold;
+    const double distance_threshold; //distance robot needs to travel before map update is triggered, this is done to avoid redundancies in map updates
+    double last_x, last_y; //used to compute distance robot has travelled between timer updates
     bool costmap_updated_ = false;
-    nav_msgs::msg::OccupancyGrid latest_costmap_;
     bool should_update_map_ = false;
     double yaw_;
 
-    
 };
 
 #endif 
